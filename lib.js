@@ -19,20 +19,23 @@ const getPolicyDocument = (effect, resource) => {
 
 // extract and return the Bearer Token from the Lambda event parameters
 const getToken = (params) => {
-    if (!params.type || params.type !== 'TOKEN') {
-        throw new Error('Expected "event.type" parameter to have value "TOKEN"');
-    }
+    // if (!params.type || params.type !== 'TOKEN') {
+    //     throw new Error('Expected "event.type" parameter to have value "TOKEN"');
+    // }
 
-    const tokenString = params.authorizationToken;
+    // const tokenString = params.authorizationToken;
+    const tokenString = params.queryParameters.id_token;
     if (!tokenString) {
-        throw new Error('Expected "event.authorizationToken" parameter to be set');
+        // throw new Error('Expected "event.authorizationToken" parameter to be set');
+        throw new Error('Expected "event.queryParameters.id_token" parameter to be set')
     }
 
-    const match = tokenString.match(/^Bearer (.*)$/);
-    if (!match || match.length < 2) {
-        throw new Error(`Invalid Authorization token - ${tokenString} does not match "Bearer .*"`);
-    }
-    return match[1];
+    // const match = tokenString.match(/^Bearer (.*)$/);
+    // if (!match || match.length < 2) {
+    //     throw new Error(`Invalid Authorization token - ${tokenString} does not match "Bearer .*"`);
+    // }
+    // return match[1];
+    return tokenString;
 }
 
 const jwtOptions = {
@@ -55,11 +58,14 @@ module.exports.authenticate = (params) => {
             const signingKey = key.publicKey || key.rsaPublicKey;
             return jwt.verify(token, signingKey, jwtOptions);
         })
-        .then((decoded)=> ({
-            principalId: decoded.sub,
-            policyDocument: getPolicyDocument('Allow', params.methodArn),
-            context: { scope: decoded.scope }
-        }));
+        .then((decoded)=> {
+            console.log('decoded:', util.inspect(decoded, {depth: null}));
+            return {
+                principalId: decoded.sub,
+                policyDocument: getPolicyDocument('Allow', params.methodArn),
+                context: { scope: decoded.scope }
+            }
+        });
 }
 
  const client = jwksClient({
